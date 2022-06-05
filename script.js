@@ -6,6 +6,7 @@ let HELPER_CONTEXT = null;
 
 let SCALER = 0.8;
 let SIZE = { x: 0, y: 0, width: 0, height: 0, rows: 3, columns: 3 };
+let PIECE_SIZE = { x: 0, y: 0 };
 let PIECES = [];
 let SELECTED_PIECE = null;
 let START_TIME = null;
@@ -274,6 +275,9 @@ function initializePieces(rows, cols) {
         }
     }
 
+    PIECE_SIZE.x = PIECES[0].width;
+    PIECE_SIZE.y = PIECES[0].height;
+
     let cnt = 0;
     for (let i = 0; i < SIZE.rows; i++) {
         for (let j = 0; j < SIZE.columns; j++) {
@@ -312,8 +316,8 @@ function initializePieces(rows, cols) {
 function randomizePieces() {
     for (let i = 0; i < PIECES.length; i++) {
         let loc = {
-            x: Math.random() * CANVAS.width,
-            y: Math.random() * CANVAS.height,
+            x: Math.random() * (CANVAS.width - PIECE_SIZE.x),
+            y: Math.random() * (CANVAS.height - PIECE_SIZE.y),
         };
         PIECES[i].x = loc.x;
         PIECES[i].y = loc.y;
