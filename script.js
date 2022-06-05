@@ -4,15 +4,24 @@ let CONTEXT = null;
 let HELPER_CANVAS = null;
 let HELPER_CONTEXT = null;
 
-let SCALER = 0.8;
+let SCALER = 0.6;
 let SIZE = { x: 0, y: 0, width: 0, height: 0, rows: 3, columns: 3 };
 let PIECE_SIZE = { x: 0, y: 0 };
 let PIECES = [];
 let SELECTED_PIECE = null;
 let START_TIME = null;
 let END_TIME = null;
-let TIMER = null;
-let MENU = document.getElementById('menuItems');
+
+let TIMER = document.getElementById('time');
+let SCORE = document.getElementById('scoreValue');
+let DIFFICULTY = document.getElementById('difficulty');
+let SCORES_CONTAINER = document.getElementById('scoresContainer');
+let SAVE_BUTTON = document.getElementById('saveBtn');
+
+let MENU_BACK = document.getElementById('menuBack');
+let MENU = document.getElementById('menu');
+let END_SCREEN = document.getElementById('endScreen');
+let SCORES_SCREEN = document.getElementById('scoresScreen');
 
 let POP_SOUND = new Audio('./resources/pop.mp3');
 POP_SOUND.volume = 0.1;
@@ -27,10 +36,6 @@ let keys = {
     MI: 329.6,
 };
 
-function showMenu() {
-    MENU.style.visibility = 'visible';
-}
-
 function main() {
     CANVAS = document.getElementById('myCanvas');
     CONTEXT = CANVAS.getContext('2d');
@@ -38,7 +43,6 @@ function main() {
     HELPER_CANVAS = document.getElementById('helperCanvas');
     HELPER_CONTEXT = HELPER_CANVAS.getContext('2d');
 
-    TIMER = document.getElementById('time');
     MENU.style.visibility = 'hidden';
     TIMER.style.visibility = 'hidden';
     addEventListeners();
@@ -66,16 +70,16 @@ function main() {
 function setDifficulty() {
     let diff = document.getElementById('difficulty').value;
     switch (diff) {
-        case 'easy':
+        case 'Easy':
             initializePieces(3, 3);
             break;
-        case 'medium':
+        case 'Medium':
             initializePieces(5, 5);
             break;
-        case 'hard':
+        case 'Hard':
             initializePieces(10, 10);
             break;
-        case 'insane':
+        case 'Insane':
             initializePieces(40, 25);
             break;
     }
@@ -83,6 +87,7 @@ function setDifficulty() {
 
 function restart() {
     TIMER.style.visibility = 'visible';
+    MENU_BACK.style.visibility = 'hidden';
     MENU.style.visibility = 'hidden';
     START_TIME = new Date().getTime();
     END_TIME = null;
@@ -160,16 +165,19 @@ function onMouseDown(evt) {
     SELECTED_PIECE = getPressedPieceByColor(evt, clickedColor);
     // SELECTED_PIECE = getPressedPiece(evt);
     if (SELECTED_PIECE != null) {
-        const index = PIECES.indexOf(SELECTED_PIECE);
-        if (index > -1) {
-            PIECES.splice(index, 1);
-            PIECES.push(SELECTED_PIECE);
+        if (!SELECTED_PIECE.correct) {
+            const index = PIECES.indexOf(SELECTED_PIECE);
+            if (index > -1) {
+                PIECES.splice(index, 1);
+                PIECES.push(SELECTED_PIECE);
+            }
+            SELECTED_PIECE.offset = {
+                x: evt.x - SELECTED_PIECE.x,
+                y: evt.y - SELECTED_PIECE.y,
+            };
+        } else {
+            SELECTED_PIECE = null;
         }
-        SELECTED_PIECE.offset = {
-            x: evt.x - SELECTED_PIECE.x,
-            y: evt.y - SELECTED_PIECE.y,
-        };
-        SELECTED_PIECE.correct = false;
     }
 }
 
@@ -183,11 +191,16 @@ function onMouseMove(evt) {
 function onMouseUp() {
     if (SELECTED_PIECE != null && SELECTED_PIECE.isClose()) {
         SELECTED_PIECE.snap();
+        const index = PIECES.indexOf(SELECTED_PIECE);
+        if (index > -1) {
+            PIECES.splice(index, 1);
+            PIECES = [SELECTED_PIECE].concat(PIECES);
+        }
         if (isComplete() && END_TIME == null) {
             let now = new Date().getTime();
             END_TIME = now;
             setTimeout(playMelody, 300);
-            MENU.style.visibility = 'visible';
+            showEndScreen();
         }
     }
     SELECTED_PIECE = null;
@@ -257,6 +270,7 @@ function handleResize() {
     SIZE.height = resizer * VIDEO.videoHeight;
     SIZE.x = window.innerWidth / 2 - SIZE.width / 2;
     SIZE.y = window.innerHeight / 2 - SIZE.height / 2;
+    console.log(SIZE);
 }
 
 function initializePieces(rows, cols) {
@@ -551,4 +565,94 @@ function playMelody() {
     setTimeout(function () {
         playNote(keys.DO, 300);
     }, 1200);
+}
+
+function showMenu() {
+    END_SCREEN.style.visibility = 'hidden';
+    MENU.style.visibility = 'visible';
+}
+
+function showEndScreen() {
+    const time = Math.floor((END_TIME - START_TIME) / 1000);
+    SCORE.innerHTML = 'Time: ' + time;
+    MENU_BACK.style.visibility = 'visible';
+    END_SCREEN.style.visibility = 'visible';
+    SAVE_BUTTON.innerHTML = 'Save';
+    SAVE_BUTTON.disabled = false;
+}
+
+function showScores() {
+    END_SCREEN.style.visibility = 'hidden';
+    SCORES_SCREEN.style.visibility = 'visible';
+    SCORES_CONTAINER.innerHTML = 'Loading...';
+    getScores();
+}
+
+function closeScores() {
+    END_SCREEN.style.visibility = 'visible';
+    SCORES_SCREEN.style.visibility = 'hidden';
+}
+
+function getScores() {
+    fetch('Server.php').then(function (response) {
+        response.json().then(function (data) {
+            SCORES_CONTAINER.innerHTML = formatScores(data);
+        });
+    });
+}
+
+function saveScore() {
+    const time = END_TIME - START_TIME;
+    const name = document.getElementById('name').value;
+    if (name == '') {
+        alert('Enter your name!');
+        return;
+    }
+    const difficulty = DIFFICULTY.value;
+    fetch(
+        'server.php?info={"name":"' +
+            name +
+            '",' +
+            '"time":' +
+            time +
+            ',' +
+            '"difficulty":"' +
+            difficulty +
+            '"}'
+    ).then(function (response) {
+        SAVE_BUTTON.innerHTML = 'Saved!';
+    });
+    SAVE_BUTTON.disabled = true;
+}
+
+function formatScores(data) {
+    let html =
+        '<table style="width:15rem;background:white;padding:1rem;border-radius:5px;line-height:1.5rem">';
+
+    html += formatScoreTable(data['easy'], 'Easy');
+    html += formatScoreTable(data['medium'], 'Medium');
+    html += formatScoreTable(data['hard'], 'Hard');
+    html += formatScoreTable(data['insane'], 'Insane');
+
+    return html;
+}
+
+function formatScoreTable(data, header) {
+    let html =
+        '<tr style="line-height:2rem;background-color: lightgray"><td></td><td><b>' +
+        header +
+        '</b></td><td><b>Time</b></td>';
+    for (let i = 0; i < data.length; i++) {
+        html +=
+            '<tr><td>' +
+            (i + 1) +
+            ".</td><td title='" +
+            data[i]['Name'] +
+            "'>" +
+            data[i]['Name'] +
+            '</td><td>' +
+            Math.floor(data[i]['Time'] / 1000) +
+            '</td></tr>';
+    }
+    return html;
 }

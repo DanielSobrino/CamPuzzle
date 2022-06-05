@@ -10,28 +10,47 @@
     </head>
     <body onload="main()">
         <canvas id="myCanvas"></canvas>
-        <canvas id="helperCanvas" style="display: none"></canvas>
+        <canvas id="helperCanvas" style="visibility: hidden"></canvas>
         <div id="time"></div>
-        <div id="menuItems">
-            <div id="menu">
-                <div id="controls">
-                    <h2>PuzzleCam</h2>
-                    <div class="row">
-                        <label for="difficulty">Difficulty</label>
-                        <select
-                            name="difficulty"
-                            id="difficulty"
-                            onchange="setDifficulty()"
-                        >
-                            <option value="easy">Easy</option>
-                            <option value="medium">Medium</option>
-                            <option value="hard">Hard</option>
-                            <option value="insane">Insane</option>
-                        </select>
-                    </div>
-                    <button onclick="restart()">Start</button>
+        <div id="menuBack"></div>
+        <div id="menu" class="menu">
+            <div class="flexColumn">
+                <h2>PuzzleCam</h2>
+                <div class="row">
+                    <label for="difficulty">Difficulty</label>
+                    <select
+                        name="difficulty"
+                        id="difficulty"
+                        onchange="setDifficulty()"
+                    >
+                        <option value="Easy">Easy</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Hard">Hard</option>
+                        <option value="Insane">Insane</option>
+                    </select>
                 </div>
+                <button onclick="restart()" class="startBtn">Start</button>
             </div>
+        </div>
+
+        <div id="endScreen" class="menu flexColumn" style="visibility: hidden">
+            <h2>PuzzleCam</h2>
+            <div id="scoreValue"></div>
+            <input type="text" id="name" placeholder="Username" />
+            <button onclick="saveScore()" id="saveBtn">Save</button>
+            <div class="row">
+                <button onclick="showScores()">Leaderboard</button>
+                <button onclick="showMenu()">Menu</button>
+            </div>
+        </div>
+        <div
+            id="scoresScreen"
+            class="menu flexColumn"
+            style="visibility: hidden"
+        >
+            <h2>PuzzleCam</h2>
+            <div id="scoresContainer"></div>
+            <button onclick="closeScores()">Back</button>
         </div>
     </body>
 </html>

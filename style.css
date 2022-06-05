@@ -10,16 +10,17 @@ body {
     font-family: Arial, Helvetica, sans-serif;
 }
 
-#menuItems {
+#menuBack {
     user-select: none;
     position: absolute;
     top: 0;
     left: 0;
     bottom: 0;
     right: 0;
+    background: rgba(255, 255, 255, 0.7);
 }
 
-#menu {
+.menu {
     height: fit-content;
     width: fit-content;
     position: absolute;
@@ -29,12 +30,12 @@ body {
     bottom: 0;
     margin: auto;
     padding: 2rem;
-    background: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.9);
     border-radius: 5px;
     box-shadow: 5px 5px 10px black;
 }
 
-#controls {
+.flexColumn {
     display: flex;
     flex-direction: column;
     text-align: center;
@@ -52,11 +53,23 @@ body {
     background: rgba(187, 187, 187, 0.3);
 }
 
-button {
+.startBtn {
     font-size: 2rem;
+}
+
+button,
+input,
+select {
     border: none;
+    background: rgba(187, 187, 187, 0.8);
+    padding: 1vmin 1rem;
     border-radius: 3px;
-    padding: 1vmin 0;
+    text-align: center;
+    cursor: pointer;
+}
+
+select option {
+    text-align: left;
 }
 
 button:hover,
@@ -66,9 +79,9 @@ button:focus {
     box-shadow: 2px 2px 5px rgb(85, 85, 85);
 }
 
-select {
-    cursor: pointer;
-    border: none;
+button:disabled {
+    background: rgba(187, 187, 187, 0.4);
+    cursor: default;
 }
 
 .row {
@@ -78,9 +91,19 @@ select {
     align-items: center;
 }
 
+.row * {
+    flex-grow: 1;
+}
+
+#scoresContainer {
+    height: fit-content;
+    max-height: 43vh;
+    overflow: auto;
+}
+
 @media (max-width: 658px) {
     select {
-        font-size: 4vmin;
+        font-size: 0.8rem;
     }
     .row {
         flex-direction: column;
