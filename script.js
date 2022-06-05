@@ -270,7 +270,6 @@ function handleResize() {
     SIZE.height = resizer * VIDEO.videoHeight;
     SIZE.x = window.innerWidth / 2 - SIZE.width / 2;
     SIZE.y = window.innerHeight / 2 - SIZE.height / 2;
-    console.log(SIZE);
 }
 
 function initializePieces(rows, cols) {
@@ -328,11 +327,27 @@ function initializePieces(rows, cols) {
 }
 
 function randomizePieces() {
+    const V_MARGIN = (CANVAS.height - SIZE.height) / 2;
+    const H_MARGIN = (CANVAS.width - SIZE.width) / 2;
     for (let i = 0; i < PIECES.length; i++) {
         let loc = {
             x: Math.random() * (CANVAS.width - PIECE_SIZE.x),
             y: Math.random() * (CANVAS.height - PIECE_SIZE.y),
         };
+        if (V_MARGIN > PIECE_SIZE.y || H_MARGIN > PIECE_SIZE.x) {
+            while (
+                loc.x + PIECE_SIZE.x > H_MARGIN &&
+                loc.x < SIZE.width + H_MARGIN &&
+                loc.y + PIECE_SIZE.y > V_MARGIN &&
+                loc.y < SIZE.height + V_MARGIN
+            ) {
+                loc = {
+                    x: Math.random() * (CANVAS.width - PIECE_SIZE.x),
+                    y: Math.random() * (CANVAS.height - PIECE_SIZE.y),
+                };
+            }
+        }
+
         PIECES[i].x = loc.x;
         PIECES[i].y = loc.y;
         PIECES[i].correct = false;
