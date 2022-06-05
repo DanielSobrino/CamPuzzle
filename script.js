@@ -1,6 +1,9 @@
 let VIDEO = null;
 let CANVAS = null;
 let CONTEXT = null;
+let HELPER_CANVAS = null;
+let HELPER_CONTEXT = null;
+
 let SCALER = 0.8;
 let SIZE = { x: 0, y: 0, width: 0, height: 0, rows: 3, columns: 3 };
 let PIECES = [];
@@ -30,13 +33,15 @@ function showMenu() {
 function main() {
     CANVAS = document.getElementById('myCanvas');
     CONTEXT = CANVAS.getContext('2d');
+
+    HELPER_CANVAS = document.getElementById('helperCanvas');
+    HELPER_CONTEXT = HELPER_CANVAS.getContext('2d');
+
     TIMER = document.getElementById('time');
     MENU.style.visibility = 'hidden';
     TIMER.style.visibility = 'hidden';
     addEventListeners();
 
-    CANVAS.width = window.innerWidth;
-    CANVAS.height = window.innerHeight;
     let promise = navigator.mediaDevices.getUserMedia({ video: true });
     promise
         .then(function (signal) {
@@ -138,7 +143,21 @@ function onTouchEnd() {
 }
 
 function onMouseDown(evt) {
-    SELECTED_PIECE = getPressedPiece(evt);
+    const imgData = HELPER_CONTEXT.getImageData(evt.x, evt.y, 1, 1);
+    if (imgData.data[3] == 0) {
+        // if transparent
+        return; // not clicking
+    }
+    const clickedColor =
+        'rgb(' +
+        imgData.data[0] +
+        ',' +
+        imgData.data[1] +
+        ',' +
+        imgData.data[2] +
+        ')';
+    SELECTED_PIECE = getPressedPieceByColor(evt, clickedColor);
+    // SELECTED_PIECE = getPressedPiece(evt);
     if (SELECTED_PIECE != null) {
         const index = PIECES.indexOf(SELECTED_PIECE);
         if (index > -1) {
@@ -187,8 +206,18 @@ function getPressedPiece(loc) {
     return null;
 }
 
+function getPressedPieceByColor(loc, color) {
+    for (let i = PIECES.length - 1; i >= 0; i--) {
+        if (PIECES[i].color == color) {
+            return PIECES[i];
+        }
+    }
+    return null;
+}
+
 function updateGame() {
     CONTEXT.clearRect(0, 0, CANVAS.width, CANVAS.height);
+    HELPER_CONTEXT.clearRect(0, 0, CANVAS.width, CANVAS.height);
 
     CONTEXT.globalAlpha = 0.5;
     CONTEXT.drawImage(VIDEO, SIZE.x, SIZE.y, SIZE.width, SIZE.height);
@@ -196,13 +225,27 @@ function updateGame() {
 
     for (let i = 0; i < PIECES.length; i++) {
         PIECES[i].draw(CONTEXT);
+        PIECES[i].draw(HELPER_CONTEXT, false);
     }
 
     updateTime();
     window.requestAnimationFrame(updateGame);
 }
 
+function getRandomColor() {
+    const red = Math.floor(Math.random() * 255);
+    const green = Math.floor(Math.random() * 255);
+    const blue = Math.floor(Math.random() * 255);
+    return 'rgb(' + red + ',' + green + ',' + blue + ')';
+}
+
 function handleResize() {
+    CANVAS.width = window.innerWidth;
+    CANVAS.height = window.innerHeight;
+
+    HELPER_CANVAS.width = window.innerWidth;
+    HELPER_CANVAS.height = window.innerHeight;
+
     let resizer =
         SCALER *
         Math.min(
@@ -220,9 +263,14 @@ function initializePieces(rows, cols) {
     SIZE.columns = cols;
 
     PIECES = [];
+    const uniqueRandomColors = [];
     for (let i = 0; i < SIZE.rows; i++) {
         for (let j = 0; j < SIZE.columns; j++) {
-            PIECES.push(new Piece(i, j));
+            let color = getRandomColor();
+            while (uniqueRandomColors.includes(color)) {
+                color = getRandomColor();
+            }
+            PIECES.push(new Piece(i, j, color));
         }
     }
 
@@ -274,7 +322,7 @@ function randomizePieces() {
 }
 
 class Piece {
-    constructor(rowIndex, colIndex) {
+    constructor(rowIndex, colIndex, color) {
         this.rowIndex = rowIndex;
         this.colIndex = colIndex;
         this.x = SIZE.x + (SIZE.width * this.colIndex) / SIZE.columns;
@@ -284,9 +332,10 @@ class Piece {
         this.xCorrect = this.x;
         this.yCorrect = this.y;
         this.correct = true;
+        this.color = color;
     }
 
-    draw(context) {
+    draw(context, useCam = true) {
         context.beginPath();
 
         const sz = Math.min(this.width, this.height);
@@ -403,17 +452,29 @@ class Piece {
                 tabHeight) /
             sz;
 
-        context.drawImage(
-            VIDEO,
-            (this.colIndex * VIDEO.videoWidth) / SIZE.columns - scaledTabHeight,
-            (this.rowIndex * VIDEO.videoHeight) / SIZE.rows - scaledTabHeight,
-            VIDEO.videoWidth / SIZE.columns + scaledTabHeight * 2,
-            VIDEO.videoHeight / SIZE.rows + scaledTabHeight * 2,
-            this.x - tabHeight,
-            this.y - tabHeight,
-            this.width + tabHeight * 2,
-            this.height + tabHeight * 2
-        );
+        if (useCam) {
+            context.drawImage(
+                VIDEO,
+                (this.colIndex * VIDEO.videoWidth) / SIZE.columns -
+                    scaledTabHeight,
+                (this.rowIndex * VIDEO.videoHeight) / SIZE.rows -
+                    scaledTabHeight,
+                VIDEO.videoWidth / SIZE.columns + scaledTabHeight * 2,
+                VIDEO.videoHeight / SIZE.rows + scaledTabHeight * 2,
+                this.x - tabHeight,
+                this.y - tabHeight,
+                this.width + tabHeight * 2,
+                this.height + tabHeight * 2
+            );
+        } else {
+            context.fillStyle = this.color;
+            context.fillRect(
+                this.x - tabHeight,
+                this.y - tabHeight,
+                this.width + tabHeight * 2,
+                this.height * tabHeight * 2
+            );
+        }
 
         context.restore();
 
@@ -476,5 +537,14 @@ function playMelody() {
     }, 300);
     setTimeout(function () {
         playNote(keys.MI, 300);
+    }, 400);
+    setTimeout(function () {
+        playNote(keys.MI, 300);
     }, 600);
+    setTimeout(function () {
+        playNote(keys.DO, 300);
+    }, 900);
+    setTimeout(function () {
+        playNote(keys.DO, 300);
+    }, 1200);
 }
